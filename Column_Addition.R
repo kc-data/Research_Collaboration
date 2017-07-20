@@ -4,7 +4,7 @@
 # Info:   Functions to help clean up and add variables to data
 
 # Function to use a list to create aggregate from one column in creating a new column
-gen_crime_type <- function(list, data = df, columnToUse, columnToChange, varInput){
+create_aggr_column <- function(list, data = df, columnToUse, columnToChange, varInput){
   require(stringr)
   # Setting up column names to use
   col1 <- deparse(substitute(columnToUse))
