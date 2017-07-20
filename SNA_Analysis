@@ -4,6 +4,13 @@
 # Date:   July 12, 2017
 # Info:   Functions that create graph objects
 
+import sys as sys
+import numpy as np
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+import community
+
 # Function to add attributes to nodes
 def add_node_attribute(list, data = dframe, graph = G, data_index = ['UID', 'INCIDENT_NUMBER']):
     """Adds attributes to nodes
