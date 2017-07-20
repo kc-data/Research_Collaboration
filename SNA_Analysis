@@ -1,0 +1,186 @@
+# Python version 2.7.13
+# Title:  Package for SNA research
+# Author: Rory Pulvino
+# Date:   July 12, 2017
+# Info:   Functions that create graph objects
+
+# Function to add attributes to nodes
+def add_crime_attribute(list, data = dframe, graph = G, data_index = ['UID', 'INCIDENT_NUMBER']):
+    """Adds suspect attributes to suspect nodes
+    based on a list of column variables to use"""
+    
+    for x in list:
+        nx.set_node_attributes(graph, x, pd.Series(data[x].values, index=data[data_index]).to_dict())
+        print(x + ' attribute added')
+
+# Functions to add neighbor nodes to a previous node list of interest  
+def get_nodes_and_nbrs(G, nodes_of_interest):
+    """
+    Returns a list of nodes from the graph `G` with the `nodes_of_interest` and their neighbors.
+    """
+    nodes_to_draw = []
+    
+    # Iterate over the nodes of interest
+    for n in nodes_of_interest:
+    
+        # Append the nodes of interest to nodes_to_draw
+        nodes_to_draw.append(n)
+        
+        # Iterate over all the neighbors of node n
+        for nbr in G.neighbors(n):
+        
+            # Append the neighbors of n to nodes_to_draw
+            nodes_to_draw.append(nbr)
+            
+    return nodes_to_draw
+
+# Function that returns a list of tuples, the first object being 
+def get_list_component_subgraph(G, node_list):
+    '''Returns list of component subgraphs based on a node list and gives 
+    some basic statistics about the subgraphs'''
+    
+    G_list = sorted(nx.connected_component_subgraphs(G.subgraph(node_list)), key = len, reverse = True)
+    
+    print('Largest component subgraph \n' + nx.info(G_list[0]) + '\nDensity: ' + str(nx.density(G_list[0])))
+    print('\nSecond largest component subgraph \n' + nx.info(G_list[1]) + '\nDensity: ' + str(nx.density(G_list[1])))
+    
+    graph_size = []
+    for i in range(len(G_list)):
+        graph_size.append(len(G_list[i].nodes()))
+    
+    component_graph_tuples = list(zip(G_list, graph_size))
+    component_graph_tuples.sort(key = lambda x: x[1], reverse = True)
+    
+    print('The largest component has ' + str(component_graph_tuples[0][1]) + ' nodes.')
+    print('The second largest component has ' + str(component_graph_tuples[1][1]) + ' nodes.')
+    print('The smallest component has ' + str(component_graph_tuples[-1][1]) + ' nodes.')
+    
+    return component_graph_tuples
+
+# Function returns the largeset component subgraph
+def get_largest_component_subgraph(G, node_list):
+    '''Generate the largest subgraph based on a node list and see 
+    some basic statistics about the subgraphs'''
+    
+    G_list = sorted(nx.connected_component_subgraphs(G.subgraph(node_list)), key = len, reverse = True)
+    
+    print('Largest component subgraph \n' + nx.info(G_list[0]) + '\nDensity: ' + str(nx.density(G_list[0])))
+    print('\nSecond largest component subgraph \n' + nx.info(G_list[1]) + '\nDensity: ' + str(nx.density(G_list[1])))
+    
+    return G_list[0]
+
+# Function returns a sorted list of tuples that contain a community graph 
+# and the number of nodes in the community graph
+def get_community_subgraphs(G):
+    '''Returns a sorted list of tuples of:
+    (graph objects of node communities from a larger graph, number of nodes of the graph).'''
+    
+    partition_dict = community.best_partition(G)
+    nx.set_node_attributes(G, 'community_partition', partition_dict)
+    
+    partition_values = []
+    for k, v in partition_dict.items():
+        
+        if v not in partition_values:
+            partition_values.append(v)
+    
+    print('There are ' + str(len(partition_values)) + ' communities in the network')
+    
+    community_graphs = []
+    for i in partition_values:
+        community_graphs.append(G.subgraph([n for n, d in G.nodes(data = True) if d['community_partition'] == i]))
+    
+    if len(partition_values) == len(community_graphs):
+        print('Community graphs created.')
+    else:
+        print('Community graphs not created.')
+    
+    graph_size = []
+    for i in range(len(community_graphs)):
+        graph_size.append(len(community_graphs[i]))
+
+    community_graph_tuples = list(zip(community_graphs, graph_size))
+    community_graph_tuples.sort(key = lambda x: x[1], reverse = True)
+
+    print('The largest community has ' + str(community_graph_tuples[0][1]) + ' nodes.')
+    print('The smallest community has ' + str(community_graph_tuples[-1][1]) + ' nodes.')
+    
+    return community_graph_tuples
+
+# Function adds dictionaries of centrality measures to a graph
+def add_centrality_measures_to_nodes(G, graph_type = ['component', 'community']):
+    '''Adds centrality measures as a key value pair to nodes of a graph.'''
+    
+    if graph_type == 'community':
+        nx.set_node_attributes(G, 'community_Betweenness_centrality', nx.betweenness_centrality(G))
+        nx.set_node_attributes(G, 'community_Degree_centrality', nx.degree_centrality(G))
+        nx.set_node_attributes(G, 'community_Closeness_centrality', nx.closeness_centrality(G))
+        nx.set_node_attributes(G, 'community_Eigen_centrality', nx.eigenvector_centrality_numpy(G))
+        nx.set_node_attributes(G, 'community_Katz_centrality', nx.katz_centrality_numpy(G))
+    
+    else:
+        nx.set_node_attributes(G, 'component_Betweenness_centrality', nx.betweenness_centrality(G))
+        nx.set_node_attributes(G, 'component_Degree_centrality', nx.degree_centrality(G))
+        nx.set_node_attributes(G, 'component_Closeness_centrality', nx.closeness_centrality(G))
+        nx.set_node_attributes(G, 'component_Eigen_centrality', nx.eigenvector_centrality_numpy(G))
+        nx.set_node_attributes(G, 'component_Katz_centrality', nx.katz_centrality_numpy(G))
+    
+    return G
+
+# Function returns basic statistical information about a list of 
+# graph objects
+def get_community_summary_statistics(G_list_tuple):
+    '''Getting summary statistics for a graph object. Output is...'''
+    
+    # Outlining stats broadly
+    print('\nLargest community subgraph \n' + nx.info(G_list_tuple[0][0]) + '\nDensity: ' + str(nx.density(G_list_tuple[0][0])))
+    print('\nThe second largest community subgraph \n' + nx.info(G_list_tuple[1][0]) + '\nDensity: ' + str(nx.density(G_list_tuple[1][0])))
+    print('\nSmallest community subgraph \n' + nx.info(G_list_tuple[-1][0]) + '\nDensity: ' + str(nx.density(G_list_tuple[-1][0])))
+    
+    # Graphing stats to get a feel for what communities look like
+    density_list = []
+    for G in range(len(G_list_tuple)):
+        d = nx.density(G_list_tuple[G][0])
+        n = G_list_tuple[G][1]
+        density_list.append((d,n))
+    
+    plt.scatter(*zip(*density_list))
+    plt.xlabel('Density')
+    plt.ylabel('Number of Nodes')
+    plt.title('Density of Community Graphs by Number of Nodes')
+    plt.show()
+
+# Function to add centrality measures as node attributes to a list of tuples with
+# graph objects
+def add_centrality_measures_to_community_graphs(list_of_tuples_of_graphs):
+    '''returns a list of tuples with a graph object with centrality measures, and the
+    number of nodes in the graph for sorting purposes.'''
+    
+    community_graphs_with_centrality = []
+    for G, n in list_of_tuples_of_graphs:
+        G_new = add_centrality_measures_to_nodes(G, graph_type='community')
+        community_graphs_with_centrality.append(G_new)
+    
+    number_of_nodes = []
+    for G in community_graphs_with_centrality:
+        nodes = len(G.nodes())
+        number_of_nodes.append(nodes)
+    
+    suspect_communities_with_centrality = list(zip(community_graphs_with_centrality, number_of_nodes))
+    return suspect_communities_with_centrality
+
+# Function to extract graph data to a dictionary to then put into a dataframe
+def move_graph_to_dictionary(graph):
+    '''Converts a graph object to a dictionary with the attributes as keys.'''
+    
+    data={}
+    
+    data['UID'] = graph.nodes()
+    
+    other_cols = graph.nodes(data = True)[0][1].keys()
+    list_of_dicts = [d for n, d in graph.nodes(data = True)]
+    
+    for key in other_cols:
+        data[key] = [d[key] for d in list_of_dicts]
+        
+    return data
