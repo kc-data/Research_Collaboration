@@ -170,6 +170,11 @@ def add_centrality_measures_to_community_graphs(list_of_tuples_of_graphs):
     return suspect_communities_with_centrality
 
 # Function to extract graph data to a dictionary to then put into a dataframe
+# ERRORS
+# I think this is currently the source of an error in moving data from a 
+# graph back into a dataframe. I believe what is happening is that in the for 
+# loop, since dictionaries are unordered, the node attributes are being keyed 
+# at random back to UID's.
 def move_graph_to_dictionary(graph):
     '''Converts a graph object to a dictionary with the attributes as keys.'''
     
