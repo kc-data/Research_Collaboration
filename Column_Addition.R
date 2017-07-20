@@ -23,8 +23,10 @@ create_aggr_column <- function(list, data = df, columnToUse, columnToChange, var
 # based on missing values. NewCol2 groups by ID then sums a dummy column, columnToUse,
 # and distributes this sum to all rows of ID
 AggregatedColumns <- function(df, columnToUse, NewCol1, NewCol2) {
-  # Needed library
+  # Needed libraries
   library(lazyeval)
+  library(tidyr)
+  library(dplyr)
   
   # Setting up column names to use
   columnToUse <- deparse(substitute(columnToUse))
@@ -48,6 +50,9 @@ AggregatedColumns <- function(df, columnToUse, NewCol1, NewCol2) {
 
 # Create new columns of dummies based on a list of strings to match in a different column
 create_dummies <- function(list, data = df, columnToUse, columnToCreate){
+  # Needed library
+  require(stringr)
+  
   # Setting up column names to use
   col1 <- deparse(substitute(columnToUse))
   col2 <- deparse(substitute(columnToCreate))
