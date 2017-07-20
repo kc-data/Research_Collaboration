@@ -5,8 +5,8 @@
 # Info:   Functions that create graph objects
 
 # Function to add attributes to nodes
-def add_crime_attribute(list, data = dframe, graph = G, data_index = ['UID', 'INCIDENT_NUMBER']):
-    """Adds suspect attributes to suspect nodes
+def add_node_attribute(list, data = dframe, graph = G, data_index = ['UID', 'INCIDENT_NUMBER']):
+    """Adds attributes to nodes
     based on a list of column variables to use"""
     
     for x in list:
@@ -166,8 +166,8 @@ def add_centrality_measures_to_community_graphs(list_of_tuples_of_graphs):
         nodes = len(G.nodes())
         number_of_nodes.append(nodes)
     
-    suspect_communities_with_centrality = list(zip(community_graphs_with_centrality, number_of_nodes))
-    return suspect_communities_with_centrality
+    communities_with_centrality = list(zip(community_graphs_with_centrality, number_of_nodes))
+    return communities_with_centrality
 
 # Function to extract graph data to a dictionary to then put into a dataframe
 # ERRORS
