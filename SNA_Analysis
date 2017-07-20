@@ -183,16 +183,14 @@ def add_centrality_measures_to_community_graphs(list_of_tuples_of_graphs):
 # loop, since dictionaries are unordered, the node attributes are being keyed 
 # at random back to UID's.
 def move_graph_to_dictionary(graph):
-    '''Converts a graph object to a dictionary with the attributes as keys.'''
+    '''Converts a graph object to a dictionary with the attributes as key-value pairs.'''
     
-    data={}
+    data = {}
     
-    data['UID'] = graph.nodes()
-    
-    other_cols = graph.nodes(data = True)[0][1].keys()
+    cols = graph.nodes(data = True)[0][1].keys()
     list_of_dicts = [d for n, d in graph.nodes(data = True)]
     
-    for key in other_cols:
+    for key in cols:
         data[key] = [d[key] for d in list_of_dicts]
         
     return data
