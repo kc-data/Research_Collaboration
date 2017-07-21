@@ -182,15 +182,24 @@ def add_centrality_measures_to_community_graphs(list_of_tuples_of_graphs):
 # graph back into a dataframe. I believe what is happening is that in the for 
 # loop, since dictionaries are unordered, the node attributes are being keyed 
 # at random back to UID's.
-def move_graph_to_dictionary(graph):
+# SOLUTION
+# Found online a function for this, not sure why this works with update whereas
+# my previous attempt using a list comprehension did not.
+# UPDATE
+# Finally realized the issue was actually after I moved the data into excel and was
+# sorting in various ways that got certain columns and rows out of order
+def move_graph_to_list(graph):
     '''Converts a graph object to a dictionary with the attributes as key-value pairs.'''
     
-    data = {}
+    nodelist = []
+    for n, d in graph.nodes(data=True):
+        # nodeinfo stores one "record" of data as a dict
+        nodeinfo = {'Name': n} 
     
-    cols = graph.nodes(data = True)[0][1].keys()
-    list_of_dicts = [d for n, d in graph.nodes(data = True)]
+        # Update the nodeinfo dictionary 
+        nodeinfo.update(d)
     
-    for key in cols:
-        data[key] = [d[key] for d in list_of_dicts]
-        
-    return data
+        # Append the nodeinfo to the node list
+        nodelist.append(nodeinfo)
+    
+    return nodelist
