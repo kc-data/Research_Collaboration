@@ -4,7 +4,7 @@ library(shiny)
 shinyUI(pageWithSidebar(
   
   # Application title
-  headerPanel("Suspect Network Visualization"),
+  headerPanel("Name Network Visualization"),
   
   # Sidebar with controls to choose a suspect, select a centrality measure, and 
   # a crime to mark nodes with. 
@@ -22,7 +22,7 @@ shinyUI(pageWithSidebar(
                 label = "Choose a variable type of interest:", 
                 choices = c("None", "drove")),
     
-    #selectInput("shape", "Include Gang affiliation?", 
+    #selectInput("shape", "Include x affiliation?", 
     #            choices = c("Yes", "No")),
     
     numericInput(inputId = "degree_separation", 
