@@ -57,9 +57,12 @@ create_dummies <- function(list, data = df, columnToUse, columnToCreate){
   col1 <- deparse(substitute(columnToUse))
   col2 <- deparse(substitute(columnToCreate))
   
+  # initiaize new column
+  data[, col2] <- 0
+  
   # Changing the row entry based on the list of strings
   for(x in list){
-    data[, col2] <- ifelse(str_detect(data[, col1], x), 1, 0)
+    data[, col2] <- ifelse(str_detect(data[, col1], x), 1, data[, col2])
   }
   
   return(data)
