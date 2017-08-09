@@ -12,7 +12,7 @@ create_aggr_column <- function(list, data = df, columnToUse, columnToChange, var
   
   # Changing the row entry based on the list of strings
   for(x in list){
-    data[, col2] <- ifelse(str_detect(data[, col1], x), varInput, as.character(data[[col2]]))
+    data[[col2]] <- ifelse(str_detect(data[[col1]], x), varInput, as.character(data[[col2]]))
   }
   
   return(data)
@@ -62,7 +62,7 @@ create_dummies <- function(list, data = df, columnToUse, columnToCreate){
   
   # Changing the row entry based on the list of strings
   for(x in list){
-    data[, col2] <- ifelse(str_detect(data[, col1], x), 1, data[, col2])
+    data[[col2]] <- ifelse(str_detect(data[[col1]], x), 1, data[[col2]])
   }
   
   return(data)
