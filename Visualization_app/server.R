@@ -11,7 +11,7 @@
 library(shiny)
 pkgs <- c("tidyverse", "lubridate", "readxl", 'stringr', 
           "reshape2", 'RColorBrewer', 'network', 'sna', 'igraph',
-          'GGally', 'intergraph')
+          'GGally', 'intergraph', 'RecordLinkage')
 lapply(pkgs, require, character.only = TRUE)
 #library(datasets) # Need to load in data
 
@@ -30,6 +30,26 @@ sample2_network <- bipartite.projection(full_network)$proj1 # Creating the unipa
 # Define server logic required to summarize and view the selected dataset
 shinyServer(function(input, output) {
   
+  central_node <- reactive({
+    # Ensuring that the input$UID is upper case
+    test_UID <- toupper(input$UID)
+    
+    # Calculate nearest strings
+    distance = levenshteinSim(test_UID, dfsuspect_attr$UID)
+    
+    if (test_UID %in% dfsuspect_attr$UID){
+      name_used <- test_UID 
+    }
+    else if (max(distance) > 0.7){
+      # Taking the best matched string given the user entry
+      name_used <- dfsuspect_attr$UID[distance == max(distance)][1]
+    }
+    else {
+      name_used <- test_UID
+    }
+    return(name_used)
+  })
+  
   # The output$Network_Title is computed based on a reactive expression that
   # returns input$UID. When the user changes the "Name" field:
   #
@@ -37,14 +57,15 @@ shinyServer(function(input, output) {
   #  2) The new caption is pushed back to the browser for re-display
   # 
   output$Network_Title <- renderText({
-    paste0(input$UID, "'s network.")
+    paste0(central_node(), "'s network.")
   })
   
   # The output$Network_Test tests whether the name appears in the data
   #
   output$Network_Test <- renderText({
-    if (input$UID %in% dffull$name){
-      paste0(input$UID, " appears in the data.")
+    if (central_node() %in% dffull$name){
+      paste0(central_node(), " appears in the data. This is the closest name to your
+             entry.")
     }
     else{
       paste0(input$UID, " does not appear in the data. Be sure that the name entered
@@ -69,7 +90,7 @@ shinyServer(function(input, output) {
     induced.subgraph(sample2_network, 
                      vids = unlist(igraph::neighborhood(sample2_network, 
                                                         order = input$degree_separation, 
-                                                        nodes = input$UID)))
+                                                        nodes = central_node())))
   })
 
   # Reactive induced dataframe that is based on input$UID & input$degree_separation
@@ -183,7 +204,7 @@ shinyServer(function(input, output) {
     induced.subgraph(sample1_network,
                      vids = unlist(igraph::neighborhood(sample1_network,
                                                         order = input$degree_separation,
-                                                        nodes = input$UID)))
+                                                        nodes = central_node())))
   })
   
   # Grabbing the dataframe for the name + codes
