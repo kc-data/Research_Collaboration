@@ -16,7 +16,7 @@ lapply(pkgs, require, character.only = TRUE)
 #library(datasets) # Need to load in data
 
 # Likely need to load in bipartite and unipartite graphs
-dffull <- read.csv('sample.csv', stringsAsFactors = FALSE) 
+dffull <- read.csv('sample_network_data.csv', stringsAsFactors = FALSE) 
 
 dfnet <- select(dffull, name, code) # Creating the edgelist to create igraph object
 
@@ -31,21 +31,21 @@ sample2_network <- bipartite.projection(full_network)$proj1 # Creating the unipa
 shinyServer(function(input, output) {
   
   central_node <- reactive({
-    # Ensuring that the input$UID is upper case
-    test_UID <- toupper(input$UID)
+    # Ensuring that the input$name is upper case
+    test_name <- tolower(input$name)
     
     # Calculate nearest strings
-    distance = levenshteinSim(test_UID, dfsuspect_attr$UID)
+    distance = levenshteinSim(test_name, dffull$name)
     
-    if (test_UID %in% dfsuspect_attr$UID){
-      name_used <- test_UID 
+    if (test_name %in% dffull$name){
+      name_used <- test_name 
     }
     else if (max(distance) > 0.7){
       # Taking the best matched string given the user entry
-      name_used <- dfsuspect_attr$UID[distance == max(distance)][1]
+      name_used <- dffull$name[distance == max(distance)][1]
     }
     else {
-      name_used <- test_UID
+      name_used <- test_name
     }
     return(name_used)
   })
@@ -93,7 +93,7 @@ shinyServer(function(input, output) {
                                                         nodes = central_node())))
   })
 
-  # Reactive induced dataframe that is based on input$UID & input$degree_separation
+  # Reactive induced dataframe that is based on input$name & input$degree_separation
 
   # Grabbing the dataframe for the name
   # example: john
@@ -101,7 +101,7 @@ shinyServer(function(input, output) {
     
     name_list <- V(G_sample1())$name
     
-    df <- dffull[dffull$UID %in% name_list,] 
+    df <- dffull[dffull$name %in% name_list,] 
     
     df <- data.frame(distinct(df, name, .keep_all = TRUE))
     
@@ -111,7 +111,7 @@ shinyServer(function(input, output) {
   
   # Dataframe of node information
   output$person_node_dataframe <- renderDataTable({
-    df <- select(df_name(), UID, drove, tot_drove)
+    df <- select(df_name(), name, drove, tot_drove)
     df
   })
   
@@ -173,7 +173,8 @@ shinyServer(function(input, output) {
                               color = node_name_color(), 
                               color.legend = "Name in variable?",
                               palette = c('0' = 'dodgerblue', '1' = 'darkorange'),
-                              size = node_name_size()
+                              size = node_name_size(),
+                              hjust = 'inward'
                               )+
         guides(size = FALSE)
     }
@@ -182,7 +183,8 @@ shinyServer(function(input, output) {
                               label = label_nodes(),
                               color = node_name_color(), 
                               color.legend = "Name in variable?",
-                              size = node_name_size()
+                              size = node_name_size(),
+                              hjust = 'inward'
                               )+
         guides(size = FALSE)
     }
@@ -193,12 +195,9 @@ shinyServer(function(input, output) {
     
   })
   
-  
-  
   #########################################################
   ##       GRAPHING Names + Codes 
   #########################################################
-  
   # Grabbing the subnetwork for the name + codes
   G_sample2 <- reactive({
     induced.subgraph(sample1_network,
@@ -212,20 +211,16 @@ shinyServer(function(input, output) {
     name_code_list <- V(G_sample2())$name
     
     dfname <- dffull[dffull$name %in% name_code_list,] 
-    dfcode <- dffull[dffull$code %in% name_code_list,]
     
     dfname <- distinct(dfname, name, .keep_all = TRUE)
-    dfcode <- distinct(dfcode, code, .keep_all = TRUE)
     
-    df <- data.frame(bind_rows(dfname, dfcode))
-    
-    df
+    dfname
     
   })
   
   # Dataframe of node information
   output$full_node_dataframe <- renderDataTable({
-    df <- select(df_name_code(), name, code, drove, tot_code)
+    df <- select(df_name_code(), name, code, drove, tot_drove)
   })
   
   node_name_code_size <- reactive({
@@ -263,7 +258,7 @@ shinyServer(function(input, output) {
   #   2) name or code = color of node
   #   3) 
   # 
-  output$network_graph_people_and_incidents <- renderPlot({
+  output$network_graph_people_and_codes <- renderPlot({
     
     # Creating the graph
     graph_network <- ggnet2(G_sample2(),
@@ -271,7 +266,9 @@ shinyServer(function(input, output) {
                             color = str_detect(V(G_sample2())$name, '^\\d'), 
                             color.legend = "Variable?",
                             palette = c('FALSE' = 'dodgerblue', 'TRUE' = 'darkorange'),
-                            size = node_name_code_size())+
+                            size = node_name_code_size(),
+                            hjust = 'inward'
+                            )+
       guides(size = FALSE)
     
     

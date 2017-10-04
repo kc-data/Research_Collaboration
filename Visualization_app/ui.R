@@ -9,7 +9,7 @@ shinyUI(pageWithSidebar(
   # Sidebar with controls to choose a suspect, select a centrality measure, and 
   # a crime to mark nodes with. 
   sidebarPanel(
-    textInput(inputId = "UID", 
+    textInput(inputId = "name", 
               label = "Name:", 
               value = "name"),
     
@@ -35,11 +35,6 @@ shinyUI(pageWithSidebar(
                 label = "Include Node Labels?", 
                 choices = c("No", "Yes"))
     
-    #fluidRow(
-    #  column(width = 10,
-    #         verbatimTextOutput("plot_hoverinfo")
-    #  )
-    #)
   ),
   
   
@@ -51,14 +46,12 @@ shinyUI(pageWithSidebar(
     h5(textOutput("Network_Test")),
     
     tabsetPanel(
-      tabPanel("Person Network", plotOutput("network_graph_people", 
-                                            click = 'plot_click', 
-                                            hover = 'plot_hover'), 
+      tabPanel("Person Network", 
+               plotOutput("network_graph_people"), 
                dataTableOutput('person_node_dataframe')), 
       
-      tabPanel("Person & Code Network", plotOutput("network_graph_people_and_codes", 
-                                                       click = 'plot_click', 
-                                                       hover = 'plot_hover'),
+      tabPanel("Person & Code Network", 
+               plotOutput("network_graph_people_and_codes"),
                dataTableOutput('full_node_dataframe'))
     )
     
