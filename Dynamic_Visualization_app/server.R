@@ -1,17 +1,18 @@
 # Author: Rory Pulvino
-# Date:   Aug. 1, 2017
-# Info:   A First Shiny app. The app visualizes network data using ggnet2
-#         and allows for some interactivity. I'd like to move the network
-#         data into a ggnetwork for better visualization in a ggplot that 
-#         would allow other interactivity (hover and click) and/or flip 
-#         to a d3 visualization object.
-#         Recently found this tutorial on network viz: 
+# Date:   Oct. 18, 2017
+# Info:   An interactive SNA Shiny app. The app visualizes network data using networkD3
+#         and allows for some interactivity. I'd like to eventually use the VisNetwork
+#         package for these interactive graphs because they load faster, the outlay is 
+#         more appealing to me, and the syntax is very ggplot-y, but the functionality
+#         I needed to be able to turn node labels on and off and color nodes made 
+#         networkD3 a better choice for now.
+#         Used this tutorial on network viz: 
 #         http://curleylab.psych.columbia.edu/netviz/netviz1.html#/33
 
 library(shiny)
 pkgs <- c("tidyverse", "lubridate", "readxl", 'stringr', 
           "reshape2", 'RColorBrewer', 'network', 'sna', 'igraph',
-          'GGally', 'intergraph', 'RecordLinkage')
+          'GGally', 'intergraph', 'RecordLinkage', 'networkD3')
 lapply(pkgs, require, character.only = TRUE)
 #library(datasets) # Need to load in data
 
@@ -75,9 +76,9 @@ shinyServer(function(input, output) {
   
   label_nodes <- reactive({
     if (input$labels == 'No'){
-      labeling <- FALSE
+      labeling <- 0
     }
-    else {labeling <- TRUE}
+    else {labeling <- 5}
     labeling
   })
   #########################################################
@@ -122,7 +123,7 @@ shinyServer(function(input, output) {
       node_color <- df_name()$Checked_Out_Book
     }
     else {
-      node_color <- 'dodgerblue'
+      node_color <- 'no_spec'
     }
     
     node_color
@@ -162,119 +163,73 @@ shinyServer(function(input, output) {
   # The output$network_graph_people visualizes subgraphs with the following aesthetics:
   #   1) centrality = size of node
   #   2) variable = color of node
-  #   3)  = shape of node
   # 
-  output$network_graph_people <- renderPlot({
+  
+  # Create a dataframe for forceNetwork that stores node info
+  node_person_list <- reactive({
     
-    # Graphing the network
-    if (input$variable != 'None'){
-      graph_network <- ggnet2(G_sample1(),
-                              label = label_nodes(),
-                              color = node_name_color(), 
-                              color.legend = "Name in variable?",
-                              palette = c('0' = 'dodgerblue', '1' = 'darkorange'),
-                              size = node_name_size(),
-                              hjust = 'inward'
-                              )+
-        guides(size = FALSE)
-    }
-    else {
-      graph_network <- ggnet2(G_sample1(), 
-                              label = label_nodes(),
-                              color = node_name_color(), 
-                              color.legend = "Name in variable?",
-                              size = node_name_size(),
-                              hjust = 'inward'
-                              )+
-        guides(size = FALSE)
-    }
+    # Creating the node list
+    node_list <- data.frame(ID = c(0:(igraph::vcount(G_sample1()) - 1)),
+                            Name = igraph::V(G_sample1())$name)
     
+    # Adding attributes that will affect node color to the node_list
+    df_node_attributes <- df_name() %>%
+      select(Name, Checked_Out_Book)
     
-    # Printing the network
-    print(graph_network)
+    node_list <- merge(node_list, df_node_attributes, by = 'Name')
+    
+    # Add a 'no_spec' column for standard node coloring
+    node_list$no_spec <- ifelse(node_list$Name == as.character(central_node()), as.character(central_node()), 'connections')
+    
+    # Adding attributes that will affect node size to the node_list
+    node_list <- cbind(node_list, node_size = node_name_size())
+    
+    # Return the node list
+    node_list <- arrange(node_list, ID)
     
   })
   
-  #########################################################
-  ##       GRAPHING Names + Codes 
-  #########################################################
-  # Grabbing the subnetwork for the name + codes
-  G_sample2 <- reactive({
-    induced.subgraph(sample1_network,
-                     vids = unlist(igraph::neighborhood(sample1_network,
-                                                        order = input$degree_separation,
-                                                        nodes = central_node())))
+  
+  # Create an edge list 
+  edge_person_List <- reactive ({
+    
+    # Creating data frame of edges from graph
+    edge_List <- as.data.frame(get.edgelist(G_sample1()))
+    
+    # Add node ids to the edge list
+    edge_List$SourceID <- node_person_list()[match(edge_List$V1, node_person_list()$Name), 2]
+    edge_List$TargetID <- node_person_list()[match(edge_List$V2, node_person_list()$Name), 2]
+    
+    # Return edge list
+    edge_List
   })
   
-  # Grabbing the dataframe for the name + codes
-  df_name_code <- reactive({
-    name_code_list <- V(G_sample2())$name
-    
-    dfname <- dffull[dffull$Name %in% name_code_list,] 
-    
-    dfname <- distinct(dfname, Name, .keep_all = TRUE)
-    
-    dfname
-    
-  })
-  
-  # Dataframe of node information
-  output$full_node_dataframe <- renderDataTable({
-    df <- select(df_name_code(), Name, Code, Checked_Out_Book, Tot_Books_Checked_Out)
-  })
-  
-  node_name_code_size <- reactive({
-    
-    if (input$centrality == 'Betweenness'){
-      node_size <- igraph::betweenness(G_sample2(), 
-                                       v = V(G_sample2()),
-                                       directed = FALSE,
-                                       normalized = TRUE)
-    }
-    else if (input$centrality == 'Closeness'){
-      node_size <- igraph::closeness(G_sample2(),
-                                     vids = V(G_sample2()),
-                                     normalized = TRUE)
-    }
-    else if (input$centrality == 'Degree'){
-      node_size <- igraph::degree(G_sample2(),
-                                  v = V(G_sample2()),
-                                  loops = FALSE,
-                                  normalized = TRUE)
-    }
-    else if (input$centrality == 'Eigen'){
-      node_size <- igraph::eigen_centrality(G_sample2(),
-                                            directed = FALSE)
-    }
-    else {
-      node_size <- 6
-    }
-    
-    node_size
-  })
-  
-  # The output$network_graph_people_and_codes visualizes subgraphs with the following aesthetics:
+  # The output$test_network visualizes subgraphs with the following aesthetics:
   #   1) centrality = size of node
-  #   2) name or code = color of node
-  #   3) 
+  #   2) crime type = color of node
   # 
-  output$network_graph_people_and_codes <- renderPlot({
+  
+  output$network_graph_people <- renderForceNetwork({
     
     # Creating the graph
-    graph_network <- ggnet2(G_sample2(),
-                            label = label_nodes(),
-                            color = str_detect(V(G_sample2())$name, '^\\d'), 
-                            color.legend = "Variable?",
-                            palette = c('FALSE' = 'dodgerblue', 'TRUE' = 'darkorange'),
-                            size = node_name_code_size(),
-                            hjust = 'inward'
-                            )+
-      guides(size = FALSE)
-    
+    person_network <- forceNetwork(Links = edge_person_List(),
+                                    Nodes = node_person_list(),
+                                    Source = 'SourceID',
+                                    Target = 'TargetID',
+                                    NodeID = 'Name',
+                                    Nodesize = 'node_size',
+                                    Group = node_name_color(),
+                                    fontSize = 17,
+                                    legend = TRUE,
+                                    bounded = TRUE,
+                                    colourScale = JS("d3.scaleOrdinal(d3.schemeCategory10);"),
+                                    opacityNoHover = label_nodes()
+    )
     
     # Printing the network
-    print(graph_network)
+    print(person_network)
     
   })
+  
   
 })

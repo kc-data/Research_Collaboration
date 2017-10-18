@@ -44,12 +44,8 @@ shinyUI(pageWithSidebar(
     
     tabsetPanel(
       tabPanel("Person Network", 
-               plotOutput("network_graph_people"), 
-               dataTableOutput('person_node_dataframe')), 
-      
-      tabPanel("Person & Code Network", 
-               plotOutput("network_graph_people_and_codes"),
-               dataTableOutput('full_node_dataframe'))
+               forceNetworkOutput("network_graph_people"), 
+               dataTableOutput('person_node_dataframe'))
     )
     
   )
