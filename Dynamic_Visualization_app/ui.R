@@ -1,5 +1,5 @@
 library(shiny)
-
+library(networkD3)
 # Define UI for dataset viewer application
 shinyUI(pageWithSidebar(
   
@@ -30,7 +30,10 @@ shinyUI(pageWithSidebar(
     
     selectInput(inputId = "labels", 
                 label = "Include Node Labels?", 
-                choices = c("No", "Yes"))
+                choices = c("No", "Yes")),
+    
+    downloadButton('download_dataframe',
+                   'Download csv')
     
   ),
   
